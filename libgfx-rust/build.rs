@@ -9,7 +9,7 @@ fn main() {
 
     cbindgen::generate(crate_dir)
         .expect("Unable to generate bindings")
-        .write_to_file(target_dir.join("include/LibGfxRust.h"));
+        .write_to_file(target_dir.join("LibGfx/LibGfxRust.h"));
 }
 
 
@@ -17,7 +17,7 @@ fn main() {
 /// overridden by `cmake`, so we also need to check the `CARGO_TARGET_DIR`
 /// variable.
 fn target_dir() -> PathBuf {
-    if let Ok(target) = env::var("CARGO_TARGET_DIR") {
+    if let Ok(target) = env::var("EXTERNAL_CBINDGEN_OUTPUT_PATH") {
         PathBuf::from(target)
     } else {
         PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("target")

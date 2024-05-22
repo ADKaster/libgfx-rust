@@ -1,7 +1,8 @@
+#![allow(dead_code)]
+
 use std::cell::RefCell;
 use std::ffi::c_void;
 use std::io::Read;
-use std::ptr::null;
 use std::rc::Rc;
 use bytes::buf::Buf;
 use static_assertions::const_assert;
@@ -63,6 +64,10 @@ impl<'a> TGAImageDecoderPlugin<'a> {
         let mut decoder = Self::new(bytes);
         decoder.decode_tga_header()?;
         Ok(decoder)
+    }
+
+    fn drop(&mut self) {
+        panic!("TGAImageDecoderPlugin: drop");
     }
 
     fn new(bytes: &'a[u8]) -> Self {
@@ -197,7 +202,7 @@ impl<'a> ImageDecoderPlugin for TGAImageDecoderPlugin<'a> {
             });
         }
 
-        let mut bitmap = match bits_per_pixel {
+        let bitmap = match bits_per_pixel {
             24 => Bitmap::new(BitmapFormat::BGRx8888, IntSize { width: width as i32, height: height as i32 }, 1)?,
             32 => Bitmap::new(BitmapFormat::BGRA8888, IntSize { width: width as i32, height: height as i32 }, 1)?,
             _ => {

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub mod tgaloader;
 pub mod imagedecoderplugin;
 pub mod bitmap;
@@ -14,7 +16,6 @@ impl IntSize {
         self.width <= 0 || self.height <= 0
     }
 }
-
 
 pub type ARGB = u32;
 

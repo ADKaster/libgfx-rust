@@ -45,6 +45,11 @@ impl From<BitmapFormat> for StorageFormat {
     }
 }
 
+#[no_mangle]
+pub extern "C" fn bitmap_format_bytes_per_pixel(format: BitmapFormat) -> u32 {
+    StorageFormat::from(format).bytes_per_pixel()
+}
+
 #[repr(C)]
 pub enum RotationDirection {
     CounterClockwise,
@@ -54,21 +59,22 @@ pub enum RotationDirection {
 
 #[repr(C)]
 pub struct Bitmap {
-    format: BitmapFormat,
-    size: IntSize,
-    scale: i32,
-    pitch: u32,
-    data: Vec<u8>,
+    pub format: BitmapFormat,
+    pub size: IntSize,
+    pub scale: i32,
+    pub pitch: u32,
+    pub(crate) data: Vec<u8>,
 }
 
 impl Bitmap {
     pub fn new(bitmap_format: BitmapFormat, size: IntSize, intrinsic_scale: i32) -> Result<Rc<RefCell<Self>>, String> {
+        let (backing_store, pitch) = Self::allocate_backing_store(bitmap_format, size, intrinsic_scale)?;
         Ok(Rc::new(RefCell::new(Self {
             format: bitmap_format,
             size,
             scale: intrinsic_scale,
-            pitch: 0,
-            data: Self::allocate_backing_store(bitmap_format, size, intrinsic_scale)?
+            pitch: pitch as u32,
+            data: backing_store
         })))
     }
 
@@ -97,7 +103,7 @@ impl Bitmap {
         overflows
     }
 
-    fn allocate_backing_store(format: BitmapFormat, size: IntSize, scale: i32) -> Result<Vec<u8>, String> {
+    fn allocate_backing_store(format: BitmapFormat, size: IntSize, scale: i32) -> Result<(Vec<u8>, usize), String> {
         if size.is_empty() {
             return Err("Bitmap::allocate_backing_store: size is empty".to_string());
         }
@@ -108,6 +114,6 @@ impl Bitmap {
         let pitch = Self::minimum_pitch(size.width as usize * scale as usize, format);
         let data_size_in_bytes = pitch * size.height as usize * scale as usize;
 
-        Ok(vec![0u8; data_size_in_bytes])
+        Ok((vec![0u8; data_size_in_bytes], pitch))
     }
 }

@@ -232,8 +232,8 @@ impl<'a> ImageDecoderPlugin for TGAImageDecoderPlugin<'a> {
             TGADataType::UncompressedRGB => {
                 for row in 0..height as i32 {
                     for col in 0..width as i32 {
-                        let actual_row = if y_origin < height as i16 { row } else { height as i32 - 1 - row };
-                        let actual_col = if x_origin > width as i16 { col } else { width as i32 - 1 - col };
+                        let actual_row = if y_origin >= height as i16 { row } else { height as i32 - 1 - row };
+                        let actual_col = if x_origin <= width as i16 { col } else { width as i32 - 1 - col };
                         let pixel = read_pixel_from_reader(&mut self.context.reader, bytes_per_pixel as usize)?;
                         bitmap.set_pixel(actual_col, actual_row, pixel.color);
                     }
@@ -251,8 +251,8 @@ impl<'a> ImageDecoderPlugin for TGAImageDecoderPlugin<'a> {
                     for current_pixel_index in pixel_index..max_pixel_index {
                         let row = current_pixel_index as i32 / width as i32;
                         let col = current_pixel_index as i32 % width as i32;
-                        let actual_row = if y_origin < height as i16 { row } else { height as i32 - 1 - row };
-                        let actual_col = if x_origin > width as i16 { col } else { width as i32 - 1 - col };
+                        let actual_row = if y_origin >= height as i16 { row } else { height as i32 - 1 - row };
+                        let actual_col = if x_origin <= width as i16 { col } else { width as i32 - 1 - col };
                         bitmap.set_pixel(actual_col, actual_row, pixel.color);
                         if pixel_packet_header.raw && current_pixel_index + 1 < max_pixel_index {
                             let next_pixel = read_pixel_from_reader(&mut self.context.reader, bytes_per_pixel as usize)?;

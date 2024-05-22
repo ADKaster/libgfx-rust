@@ -69,18 +69,10 @@ int main(int argc, char *argv[])
     SDL_ShowWindow(window);
 
     auto frame_count = FFI::image_decoder_plugin_frame_count(decoder);
-    //auto frame_count = size_t(1);
-    printf("got decoder %p with frame count %zu\n", decoder, frame_count);
 
     for (size_t i = 0; i < frame_count; i++) {
         auto frame = FFI::image_decoder_plugin_frame(decoder, i);
         auto depth = FFI::bitmap_format_bytes_per_pixel(frame.image.format);
-        printf("got frame %zu with depth %d\n", i, depth);
-        printf("frame size: %dx%d\n", frame.image.size.width, frame.image.size.height);
-        printf("pixel format: %d\n", static_cast<int>(frame.image.format));
-        printf("pitch: %d\n", frame.image.pitch);
-        printf("SDL pixel format: %d\n", bitmap_format_to_sdl_pixel_format(frame.image.format));
-        printf("SDL_PIXELFORMAT_BGRX8888: %d\n", SDL_PIXELFORMAT_BGRX8888);
 
         SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(frame.image.data.data,
                                                          frame.image.size.width,

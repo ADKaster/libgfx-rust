@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
 use crate::{ARGB, IntSize};
 
 #[repr(u8)]
@@ -58,6 +56,7 @@ pub enum RotationDirection {
 }
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct Bitmap {
     pub format: BitmapFormat,
     pub size: IntSize,
@@ -67,15 +66,15 @@ pub struct Bitmap {
 }
 
 impl Bitmap {
-    pub fn new(bitmap_format: BitmapFormat, size: IntSize, intrinsic_scale: i32) -> Result<Rc<RefCell<Self>>, String> {
+    pub fn new(bitmap_format: BitmapFormat, size: IntSize, intrinsic_scale: i32) -> Result<Self, String> {
         let (backing_store, pitch) = Self::allocate_backing_store(bitmap_format, size, intrinsic_scale)?;
-        Ok(Rc::new(RefCell::new(Self {
+        Ok(Self {
             format: bitmap_format,
             size,
             scale: intrinsic_scale,
             pitch: pitch as u32,
             data: backing_store
-        })))
+        })
     }
 
     pub fn minimum_pitch(physical_width: usize, format: BitmapFormat) -> usize {
@@ -84,8 +83,8 @@ impl Bitmap {
     }
 
     pub fn set_pixel(&mut self, x: i32, y: i32, color: ARGB) {
-        let offset = y as usize * self.pitch as usize + x as usize * std::mem::size_of::<ARGB>();
-        let color = color.to_le_bytes();
+        let offset = (y as usize * self.pitch as usize) + x as usize * 4;
+        let color = color.to_be_bytes();
         self.data[offset..offset + 4].copy_from_slice(&color);
     }
 

@@ -1,11 +1,10 @@
-use std::cell::RefCell;
 use std::ffi::c_void;
-use std::rc::Rc;
+use std::mem::ManuallyDrop;
 use crate::bitmap::{Bitmap, BitmapFormat};
 use crate::IntSize;
 
 pub struct ImageFrameDescriptor {
-    pub image: Rc<RefCell<Bitmap>>,
+    pub image: Bitmap,
     pub duration: i32
 }
 
@@ -25,6 +24,17 @@ pub struct FFIBuffer {
     pub capacity: usize
 }
 
+impl From<Vec<u8>> for FFIBuffer {
+    fn from(data: Vec<u8>) -> Self {
+        let mut v = ManuallyDrop::new(data);
+
+        let capacity = v.capacity();
+        let size = v.len();
+        let data = v.as_mut_ptr();
+        FFIBuffer { data, size, capacity }
+    }
+}
+
 #[repr(C)]
 pub struct FFIBitmap {
     pub format: BitmapFormat,
@@ -32,6 +42,18 @@ pub struct FFIBitmap {
     pub scale: i32,
     pub pitch: u32,
     pub data: FFIBuffer
+}
+
+impl From<Bitmap> for FFIBitmap {
+    fn from(bitmap: Bitmap) -> Self {
+        FFIBitmap {
+            format: bitmap.format,
+            size: bitmap.size,
+            scale: bitmap.scale,
+            pitch: bitmap.pitch,
+            data: bitmap.data.into(),
+        }
+    }
 }
 
 #[repr(C)]
@@ -42,29 +64,10 @@ pub struct FFIImageFrameDescriptor {
 
 impl From<ImageFrameDescriptor> for FFIImageFrameDescriptor {
     fn from(descriptor: ImageFrameDescriptor) -> Self {
-        let bitmap = descriptor.image;
-
-        // :sob: How do I pull out the data vec and leave an empty vec in its place?
-        // *without copies*!!
-        let mut raw_bytes: Vec<u8> = bitmap.borrow_mut().data.clone();
-        let bitmap_ref = bitmap.borrow();
-
-        let result = FFIImageFrameDescriptor {
-            image: FFIBitmap {
-                format: bitmap_ref.format,
-                size: bitmap_ref.size,
-                scale: bitmap_ref.scale,
-                pitch: bitmap_ref.pitch,
-                data: FFIBuffer {
-                    data: raw_bytes.as_mut_ptr(),
-                    size: raw_bytes.len(),
-                    capacity: raw_bytes.capacity()
-                },
-            },
+        FFIImageFrameDescriptor {
+            image: descriptor.image.into(),
             duration: descriptor.duration
-        };
-        std::mem::forget(raw_bytes);
-        result
+        }
     }
 }
 

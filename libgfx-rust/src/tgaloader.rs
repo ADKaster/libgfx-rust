@@ -1,9 +1,7 @@
 #![allow(dead_code)]
 
-use std::cell::RefCell;
 use std::ffi::c_void;
 use std::io::Read;
-use std::rc::Rc;
 use bytes::buf::Buf;
 use static_assertions::const_assert;
 use crate::imagedecoderplugin::{ImageDecoderPlugin, ImageFrameDescriptor};
@@ -53,7 +51,7 @@ struct TGALoadingContext<'a> {
     header: TGAHeader,
     reader: bytes::buf::Reader<&'a [u8]>,
     bytes: &'a[u8],
-    bitmap: Option<Rc<RefCell<Bitmap>>>
+    bitmap: Option<Bitmap>
 }
 
 impl<'a> TGAImageDecoderPlugin<'a> {
@@ -137,14 +135,14 @@ fn read_pixel_from_reader(reader: &mut bytes::buf::Reader<&[u8]>, bytes_size: us
             if let Err(e) = reader.read_exact(&mut color_data) {
                 return Err(e.to_string());
             }
-            Ok(Color::from_rgb(color_data[0], color_data[1], color_data[2]))
+            Ok(Color::from_rgb(color_data[2], color_data[1], color_data[0]))
         }
         4 => {
             let mut color_data: [u8; 4] = [0u8; 4];
             if let Err(e) = reader.read_exact(&mut color_data) {
                 return Err(e.to_string());
             }
-            Ok(Color::from_rgba(color_data[2], color_data[1], color_data[0], color_data[3]))
+            Ok(Color::from_rgba(color_data[3], color_data[2], color_data[1], color_data[0]))
         }
         _ => {
             unreachable!("Invalid bytes size");
@@ -197,12 +195,12 @@ impl<'a> ImageDecoderPlugin for TGAImageDecoderPlugin<'a> {
 
         if self.context.bitmap.is_some() {
             return Ok(ImageFrameDescriptor {
-                image: self.context.bitmap.as_ref().unwrap().clone(),
+                image: self.context.bitmap.as_mut().unwrap().clone(),
                 duration: 0
             });
         }
 
-        let bitmap = match bits_per_pixel {
+        let mut bitmap = match bits_per_pixel {
             24 => Bitmap::new(BitmapFormat::BGRx8888, IntSize { width: width as i32, height: height as i32 }, 1)?,
             32 => Bitmap::new(BitmapFormat::BGRA8888, IntSize { width: width as i32, height: height as i32 }, 1)?,
             _ => {
@@ -237,7 +235,7 @@ impl<'a> ImageDecoderPlugin for TGAImageDecoderPlugin<'a> {
                         let actual_row = if y_origin < height as i16 { row } else { height as i32 - 1 - row };
                         let actual_col = if x_origin > width as i16 { col } else { width as i32 - 1 - col };
                         let pixel = read_pixel_from_reader(&mut self.context.reader, bytes_per_pixel as usize)?;
-                        bitmap.borrow_mut().set_pixel(actual_row, actual_col, pixel.color);
+                        bitmap.set_pixel(actual_col, actual_row, pixel.color);
                     }
                 }
             },
@@ -255,7 +253,7 @@ impl<'a> ImageDecoderPlugin for TGAImageDecoderPlugin<'a> {
                         let col = current_pixel_index as i32 % width as i32;
                         let actual_row = if y_origin < height as i16 { row } else { height as i32 - 1 - row };
                         let actual_col = if x_origin > width as i16 { col } else { width as i32 - 1 - col };
-                        bitmap.borrow_mut().set_pixel(actual_row, actual_col, pixel.color);
+                        bitmap.set_pixel(actual_col, actual_row, pixel.color);
                         if pixel_packet_header.raw && current_pixel_index + 1 < max_pixel_index {
                             let next_pixel = read_pixel_from_reader(&mut self.context.reader, bytes_per_pixel as usize)?;
                             pixel = next_pixel;

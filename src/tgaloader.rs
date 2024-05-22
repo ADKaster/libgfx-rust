@@ -1,5 +1,7 @@
 use std::cell::RefCell;
+use std::ffi::c_void;
 use std::io::Read;
+use std::ptr::null;
 use std::rc::Rc;
 use bytes::buf::Buf;
 use static_assertions::const_assert;
@@ -42,7 +44,7 @@ struct TGAPixelPacketHeader {
     pixels_count: u8,
 }
 
-struct TGAImageDecoderPlugin<'a> {
+pub struct TGAImageDecoderPlugin<'a> {
     context: TGALoadingContext<'a>
 }
 
@@ -266,5 +268,29 @@ impl<'a> ImageDecoderPlugin for TGAImageDecoderPlugin<'a> {
             image: bitmap,
             duration: 0
         })
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn tga_image_decoder_plugin_new<'a>(bytes: *const u8, size: usize) -> *mut c_void {
+    let bytes = unsafe {
+        assert!(!bytes.is_null());
+        std::slice::from_raw_parts(bytes, size)
+    };
+    match TGAImageDecoderPlugin::create(bytes) {
+        Ok(decoder) => {
+            let interface: Box<dyn ImageDecoderPlugin> = Box::new(decoder);
+            let boxed_interface = Box::new(interface);
+            Box::into_raw(boxed_interface) as *mut c_void
+        },
+        Err(_) => std::ptr::null_mut()
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn tga_image_decoder_plugin_free(opaque_decoder: *mut c_void) {
+    if !opaque_decoder.is_null() {
+        let decoder: Box<Box<dyn ImageDecoderPlugin>> = unsafe { Box::from_raw(opaque_decoder as *mut _) };
+        drop(decoder);
     }
 }

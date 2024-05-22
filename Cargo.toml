@@ -3,6 +3,12 @@ name = "libgfx-rust"
 version = "0.1.0"
 edition = "2021"
 
+[build-dependencies]
+cbindgen = "0.26.0"
+
 [dependencies]
 static_assertions = "1.1.0"
 bytes = "1.6.0"
+
+[lib]
+crate-type = ["staticlib", "lib"]

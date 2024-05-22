@@ -1,6 +1,6 @@
-mod tgaloader;
-mod imagedecoderplugin;
-mod bitmap;
+pub mod tgaloader;
+pub mod imagedecoderplugin;
+pub mod bitmap;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -15,10 +15,11 @@ impl IntSize {
     }
 }
 
-type ARGB = u32;
+
+pub type ARGB = u32;
 
 #[derive(Debug)]
-struct Color {
+pub struct Color {
     color: ARGB
 }
 

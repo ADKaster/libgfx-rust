@@ -16,6 +16,8 @@ impl BitmapFormat {
         matches!(format, 0..=3)
     }
 }
+
+#[repr(u8)]
 pub enum StorageFormat {
     BGRx8888,
     BGRA8888,
@@ -43,12 +45,14 @@ impl From<BitmapFormat> for StorageFormat {
     }
 }
 
+#[repr(C)]
 pub enum RotationDirection {
     CounterClockwise,
     Flip,
     Clockwise
 }
 
+#[repr(C)]
 pub struct Bitmap {
     format: BitmapFormat,
     size: IntSize,

@@ -291,7 +291,7 @@ pub unsafe extern "C" fn tga_image_decoder_plugin_new<'a>(bytes: *const u8, size
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn tga_image_decoder_plugin_free(opaque_decoder: *mut c_void) {
+pub extern "C" fn tga_image_decoder_plugin_free(opaque_decoder: *mut c_void) {
     if !opaque_decoder.is_null() {
         let decoder: Box<Box<dyn ImageDecoderPlugin>> = unsafe { Box::from_raw(opaque_decoder as *mut _) };
         drop(decoder);
